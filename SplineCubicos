@@ -1,0 +1,153 @@
+"""
+Created on Wed Nov 13 17:21:26 2019
+@author: ismael
+"""
+#LIBRERIAS 
+import metodoDeThomas
+import numpy as np
+from matplotlib import pyplot
+
+
+#Pares ordenados de ejemplo
+#x1 = [2, 4, 5, 8, 10]
+#y1 = [5, 6, 9, 5, 4]
+
+#nPoints = np.size(x)
+#FUNCIONES
+
+#FUNCION DE ESPACIADOS, O DISTANCIAS ENTRE NODOS
+def mesch1D(x, nPoints):
+    i = 0
+    h = np.zeros(nPoints - 1)
+    while i < (nPoints -1):
+        h[i] = x[i+1] - x[i]
+        i+=1
+    return h
+
+
+#Llenado de la matriz S (Creacion de sistema de ecuaciones con formula en terminos de S)
+def SMatrix(nPoints, h):
+    i = 0
+    j = 0
+    matrizS = np.zeros((nPoints-2, nPoints-2))
+    while i < (nPoints - 2):
+        while j < (nPoints - 2):
+               
+            if(i==j):
+                matrizS[i,j] = 2 * (h[i] + h[i + 1])
+                    
+            elif(i==(j-1)):
+                matrizS[i, j] = h[i+1]
+                    
+            elif(i==(j+1)):
+                matrizS[i, j] = h[i]
+            j+=1
+        j=0
+        i+=1
+    return matrizS
+       
+
+#Llenado del vector RSH (lado derecho de la ecuacion)
+def MethodRHS(y, h, nPoints):
+    i = 0
+    RHS = np.zeros(nPoints - 2)
+    while i < (nPoints-2):
+        RHS[i] = 6*(((y[i+2] - y[i+1]) / h[i+1]) - ((y[i+1] - y[i]) / h[i]))
+        i+=1
+    return RHS
+
+
+#Solucion de la matriz S
+def methodThomas(nPoints, matrizS, RHS):
+    vectorSolution = np.zeros(nPoints)
+    vectorSolution = metodoDeThomas.thomasMethod(matrizS, RHS)
+    return vectorSolution
+        
+
+#Llenado del vector S a partir dle vector solucion 
+def vectorS(vectorSolution, nPoints):
+    i = 1
+    s = np.zeros(nPoints)
+    s[0] = 0.0
+    s[nPoints-1] = 0.0
+    while i < (nPoints - 1):
+        s[i] = vectorSolution[i-1]
+        i+=1
+    return s
+
+#Llenado de los vectores correspondientes a las constantes de los polinomios grado tres
+def constant(s, h, y, nPoints):
+    i = 0
+    #Constantes
+    a = np.zeros(nPoints-1)
+    b = np.zeros(nPoints-1)
+    c = np.zeros(nPoints-1)
+    d = np.zeros(nPoints-1)
+    
+    while i < (nPoints-1):
+        a[i] = (s[i+1] - s[i]) / (6 * h[i])
+        b[i] = s[i] / 2
+        c[i] = (((y[i+1] - y[i]) / h[i]) - ((2 * h[i] * s[i] + h[i] * s[i+1]) / 6))
+        d[i] = y[i]
+        i+=1
+    return a, b, c, d
+
+def splinesCubicos(x, y):
+    
+    nPoints = np.size(x)
+    h = np.zeros(nPoints - 1)
+    vectorSolution = np.zeros(nPoints - 2)
+    RHS = np.zeros(nPoints - 2)
+    matrizS = np.zeros((nPoints-2, nPoints-2))
+    s = np.zeros(nPoints)
+    
+    #Constantes
+    a = np.zeros(nPoints-1)
+    b = np.zeros(nPoints-1)
+    c = np.zeros(nPoints-1)
+    d = np.zeros(nPoints-1)
+    
+    #Funcion de espaciados
+    h = mesch1D(x, nPoints)
+    
+    #Llenado de la matriz S
+    matrizS = SMatrix(nPoints, h)
+    
+    #Llenado del RHS
+    RHS = MethodRHS(y, h, nPoints)
+    
+    #Solucion de MatrizS por metodo de Thomas/GAUSS
+    vectorSolution = methodThomas(nPoints, matrizS, RHS)
+    
+    #Llenado del vector S
+    s = vectorS(vectorSolution, nPoints)
+    
+    #Llenado de los vectores respectivos a las constantes
+    a, b, c, d = constant(s, h, y, nPoints)
+    
+    #Funcion, forma general.
+    def P(j, i):
+        return a[i] * ((j - x[i])**3) + b[i] * ((j-x[i])**2) + c[i] * (j - x[i]) + d[i]
+    
+    #GRAFICAR LA FUNCION ANTERIOR EN BASE A LOS LIMITES (LINSPACE (LimiteInferior, LimiteSuperior))
+    i = 0
+    while i < (nPoints-1):
+        puntos_ejeX = np.linspace(x[i],x[i+1])
+        puntos_ejeY = P(puntos_ejeX, i)
+        pyplot.plot(puntos_ejeX,puntos_ejeY)
+        i+=1
+        
+    
+    #GRAFICAR LOS PUNTOS
+    i = 0
+    while i < (nPoints-1):
+        pyplot.plot(x[i],y[i], 'o')
+        i+=1 
+        
+splinesCubicos(x1, y1)
+splinesCubicos(x2, y2)
+splinesCubicos(x3, y3)
+splinesCubicos(x4, y4)
+splinesCubicos(x5, y5)
+splinesCubicos(x6, y6)
+splinesCubicos(x7, y7)
